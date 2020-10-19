@@ -5,7 +5,10 @@
 float e1vo_to_hz(float e1vo);
 
 // Quantize 1v/octave to semitone
-int e1vo_to_semitone(float e1vo);
+int e1vo_to_qsemitone(float e1vo);
+
+// Unquantized 1v/octave to semitone
+float e1vo_to_semitone(float e1vo);
 
 // Convert a semitone to 1v/octave
 float semitone_to_e1vo(int semitone);
@@ -14,7 +17,7 @@ float semitone_to_e1vo(int semitone);
 float quantize_e1vo(float e1vo);
 
 // Give a nice name to the midi note/semitone
-std::string semitone_name(int semitone);
+std::string semitone_name(float semitone);
 
 // Convert the semitone to Hz
-float semitone_to_hz(int semitone);
+float semitone_to_hz(float semitone);

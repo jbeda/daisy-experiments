@@ -11,6 +11,9 @@ using namespace daisysp;
 
 DaisyPatch patch;
 
+// osc_st[3] is the fundamental semitone
+float      fund_st;
+float      osc_st[3];
 Oscillator osc[3];
 
 std::string waveNames[5];
@@ -18,7 +21,7 @@ std::string waveNames[5];
 int waveform;
 int final_wave;
 
-const int   base_note      = 10;  // A0
+const int   base_note      = 24;  // C1
 const float voltage_offset = semitone_to_e1vo(base_note);
 
 float analog_to_voltage(float analog) { return analog * 5.0f; }
@@ -82,23 +85,23 @@ void UpdateOled() {
 
   patch.display.SetCursor(0, 0);
 
-  patch.display.WriteString("0xBEDA Chord", Font_7x10, true);
+  patch.display.WriteString("0xBEDA Chord", Font_6x8, true);
 
-  patch.display.SetCursor(0, 20);
-  patch.display.WriteString("waveform: ", Font_7x10, true);
+  patch.display.SetCursor(0, 10);
+  patch.display.WriteString("waveform: ", Font_6x8, true);
   patch.display.WriteString(waveNames[waveform].c_str(), Font_7x10, true);
 
-  patch.display.SetCursor(0, 40);
-  char  val[50];
-  float fundamental =
-      analog_to_voltage(patch.GetCtrlValue(DaisyPatch::CTRL_4)) +
-      voltage_offset;
+  patch.display.SetCursor(0, 20);
+  char        val[50];
+  std::string note_name = semitone_name(fund_st);
+  snprintf(val, 50, "Fund: %0.0f Hz %s", semitone_to_hz(fund_st),
+           note_name.c_str());
+  patch.display.WriteString(val, Font_6x8, true);
 
-  float       hz        = e1vo_to_hz(fundamental);
-  std::string note_name = semitone_name(e1vo_to_semitone(fundamental));
-
-  snprintf(val, 20, "Fund: %0.0f Hz %s", hz, note_name.c_str());
-  patch.display.WriteString(val, Font_7x10, true);
+  patch.display.SetCursor(0, 30);
+  snprintf(val, 50, "%4s %4s %4s", semitone_name(osc_st[0]).c_str(),
+           semitone_name(osc_st[1]).c_str(), semitone_name(osc_st[2]).c_str());
+  patch.display.WriteString(val, Font_6x8, true);
 
   patch.display.Update();
 }
@@ -107,29 +110,21 @@ void UpdateControls() {
   patch.DebounceControls();
   patch.UpdateAnalogControls();
 
-  // knobs
-  float ctrl[4];
-  for (int i = 0; i < 4; i++) {
-    ctrl[i] = patch.GetCtrlValue((DaisyPatch::Ctrl)i);
-  }
-
-  // Fundamental in 1v/octive
-  float fundamental = analog_to_voltage(ctrl[3]) + voltage_offset;
-  fundamental       = quantize_e1vo(fundamental);
-
-  for (int i = 0; i < 3; i++) {
-    ctrl[i] = analog_to_voltage(ctrl[i]);  // voltage
-    ctrl[i] += fundamental;
-    ctrl[i] = e1vo_to_hz(ctrl[i]);  // Hz
-  }
-
   // encoder
   waveform += patch.encoder.Increment();
   waveform = (waveform % final_wave + final_wave) % final_wave;
 
-  // Adjust oscillators based on inputs
+  // Figure out the fundamental frequency
+  float fund_e1vo = analog_to_voltage(patch.GetCtrlValue(DaisyPatch::CTRL_4)) +
+                    voltage_offset;
+  fund_st = e1vo_to_qsemitone(fund_e1vo);
+
+  // Tune each osc
   for (int i = 0; i < 3; i++) {
-    osc[i].SetFreq(ctrl[i]);
+    float osc_e1vo = analog_to_voltage(patch.GetCtrlValue((DaisyPatch::Ctrl)i));
+    osc_st[i]      = e1vo_to_semitone(osc_e1vo) + fund_st;
+    float osc_hz   = semitone_to_hz(osc_st[i]);
+    osc[i].SetFreq(osc_hz);
     osc[i].SetWaveform((uint8_t)waveform);
   }
 }
