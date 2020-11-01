@@ -2,7 +2,7 @@
 TARGET = chord
 
 # Sources
-CPP_SOURCES = chord.cpp notes.cpp
+CPP_SOURCES = chord.cpp notes.cpp settings.cpp
 
 # Library Locations
 LIBDAISY_DIR = ../libdaisy

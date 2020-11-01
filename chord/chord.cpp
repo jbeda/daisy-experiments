@@ -6,6 +6,8 @@
 #include "daisysp.h"
 #include "notes.h"
 
+#include "settings.h"
+
 using namespace daisy;
 using namespace daisysp;
 
@@ -67,6 +69,9 @@ int main(void) {
   patch.Init();  // Initialize hardware (daisy seed, and patch)
   samplerate = patch.AudioSampleRate();
 
+  // SaveSettings(&patch.seed);
+  LoadSettings(&patch.seed);
+
   waveform   = 0;
   final_wave = Oscillator::WAVE_POLYBLEP_TRI;
 
@@ -101,6 +106,10 @@ void UpdateOled() {
   patch.display.SetCursor(0, 30);
   snprintf(val, 50, "%4s %4s %4s", semitone_name(osc_st[0]).c_str(),
            semitone_name(osc_st[1]).c_str(), semitone_name(osc_st[2]).c_str());
+  patch.display.WriteString(val, Font_6x8, true);
+
+  patch.display.SetCursor(0, 40);
+  snprintf(val, 50, "0x%04lx", gSettings.signature);
   patch.display.WriteString(val, Font_6x8, true);
 
   patch.display.Update();
