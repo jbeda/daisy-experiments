@@ -2,10 +2,10 @@
 
 #include <string>
 
+#include "calibration.h"
 #include "daisy_patch.h"
 #include "daisysp.h"
 #include "notes.h"
-
 #include "settings.h"
 
 using namespace daisy;
@@ -46,6 +46,16 @@ static void AudioCallback(float **in, float **out, size_t size) {
   }
 }
 
+float ReadControl(int i) {
+  float val = patch.GetCtrlValue((DaisyPatch::Ctrl)i);
+
+  // For now, let's make sure we can at least get a reliable zero
+  if (val - 0.001 < gSettings.cals[i].min) {
+    val = 0.0;
+  }
+  return val;
+}
+
 void SetupOsc(float samplerate) {
   for (int i = 0; i < 3; i++) {
     osc[i].Init(samplerate);
@@ -68,6 +78,9 @@ int main(void) {
 
   patch.Init();  // Initialize hardware (daisy seed, and patch)
   samplerate = patch.AudioSampleRate();
+  patch.StartAdc();
+
+  RunCalibration(&patch);
 
   // SaveSettings(&patch.seed);
   LoadSettings(&patch.seed);
@@ -78,7 +91,6 @@ int main(void) {
   SetupOsc(samplerate);
   SetupWaveNames();
 
-  patch.StartAdc();
   patch.StartAudio(AudioCallback);
   while (1) {
     UpdateOled();
@@ -89,7 +101,6 @@ void UpdateOled() {
   patch.display.Fill(false);
 
   patch.display.SetCursor(0, 0);
-
   patch.display.WriteString("0xBEDA Chord", Font_6x8, true);
 
   patch.display.SetCursor(0, 10);
@@ -124,13 +135,13 @@ void UpdateControls() {
   waveform = (waveform % final_wave + final_wave) % final_wave;
 
   // Figure out the fundamental frequency
-  float fund_e1vo = analog_to_voltage(patch.GetCtrlValue(DaisyPatch::CTRL_4)) +
+  float fund_e1vo = analog_to_voltage(ReadControl(3)) +
                     voltage_offset;
   fund_st = e1vo_to_qsemitone(fund_e1vo);
 
   // Tune each osc
   for (int i = 0; i < 3; i++) {
-    float osc_e1vo = analog_to_voltage(patch.GetCtrlValue((DaisyPatch::Ctrl)i));
+    float osc_e1vo = analog_to_voltage(ReadControl(i));
     osc_st[i]      = e1vo_to_semitone(osc_e1vo) + fund_st;
     float osc_hz   = semitone_to_hz(osc_st[i]);
     osc[i].SetFreq(osc_hz);
