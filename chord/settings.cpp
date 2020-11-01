@@ -8,7 +8,7 @@
 Settings gSettings;
 
 const uint32_t signature      = 0xBEDA;
-const uint32_t latest_version = 1;
+const uint32_t latest_version = 2;
 
 void SaveSettings(daisy::DaisySeed* seed) {
   gSettings.signature = signature;

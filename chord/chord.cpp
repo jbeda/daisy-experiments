@@ -26,7 +26,8 @@ int final_wave;
 const int   base_note      = 24;  // C1
 const float voltage_offset = semitone_to_e1vo(base_note);
 
-float analog_to_voltage(float analog) { return analog * 5.0f; }
+// Are we currently calibrating?
+bool calibrating = false;
 
 void UpdateControls();
 
@@ -46,14 +47,8 @@ static void AudioCallback(float **in, float **out, size_t size) {
   }
 }
 
-float ReadControl(int i) {
-  float val = patch.GetCtrlValue((DaisyPatch::Ctrl)i);
-
-  // For now, let's make sure we can at least get a reliable zero
-  if (val - 0.001 < gSettings.cals[i].min) {
-    val = 0.0;
-  }
-  return val;
+float ReadControlInV(int i) {
+  return ReadCalibratedCV(&patch, i);
 }
 
 void SetupOsc(float samplerate) {
@@ -74,24 +69,20 @@ void SetupWaveNames() {
 void UpdateOled();
 
 int main(void) {
-  float samplerate;
-
   patch.Init();  // Initialize hardware (daisy seed, and patch)
-  samplerate = patch.AudioSampleRate();
   patch.StartAdc();
 
   RunCalibration(&patch);
 
-  // SaveSettings(&patch.seed);
   LoadSettings(&patch.seed);
 
   waveform   = 0;
   final_wave = Oscillator::WAVE_POLYBLEP_TRI;
 
-  SetupOsc(samplerate);
+  SetupOsc(patch.AudioSampleRate());
   SetupWaveNames();
-
   patch.StartAudio(AudioCallback);
+
   while (1) {
     UpdateOled();
   }
@@ -119,10 +110,6 @@ void UpdateOled() {
            semitone_name(osc_st[1]).c_str(), semitone_name(osc_st[2]).c_str());
   patch.display.WriteString(val, Font_6x8, true);
 
-  patch.display.SetCursor(0, 40);
-  snprintf(val, 50, "0x%04lx", gSettings.signature);
-  patch.display.WriteString(val, Font_6x8, true);
-
   patch.display.Update();
 }
 
@@ -135,13 +122,13 @@ void UpdateControls() {
   waveform = (waveform % final_wave + final_wave) % final_wave;
 
   // Figure out the fundamental frequency
-  float fund_e1vo = analog_to_voltage(ReadControl(3)) +
+  float fund_e1vo = ReadControlInV(3) +
                     voltage_offset;
   fund_st = e1vo_to_qsemitone(fund_e1vo);
 
   // Tune each osc
   for (int i = 0; i < 3; i++) {
-    float osc_e1vo = analog_to_voltage(ReadControl(i));
+    float osc_e1vo = ReadControlInV(i);
     osc_st[i]      = e1vo_to_semitone(osc_e1vo) + fund_st;
     float osc_hz   = semitone_to_hz(osc_st[i]);
     osc[i].SetFreq(osc_hz);

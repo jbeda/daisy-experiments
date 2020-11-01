@@ -4,7 +4,8 @@
 
 
 struct ControlCalibration {
-  float min, max;
+  // Values at 0 through 5V at 1V increments
+  float map[6];
 };
 
 struct Settings {

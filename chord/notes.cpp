@@ -48,6 +48,8 @@ std::string semitone_name(float fSemitone) {
     out.push_back('+');
   } else if (cents <= -0.15) {
     out.push_back('-');
+  } else {
+    out.push_back(' ');
   }
   return out;
 }
