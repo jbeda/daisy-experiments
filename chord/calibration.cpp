@@ -100,7 +100,7 @@ void Calibrator::AudioCallback(float **in, float **out, size_t size) {
     exit = true;
   }
 
-  for (int i=0; i < size; i++) {
+  for (int i = 0; i < size; i++) {
     auto val = osc.Process();
     for (int chn = 0; chn < 4; chn++) {
       out[chn][i] = val;
