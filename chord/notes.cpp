@@ -31,7 +31,7 @@ std::string semitone_name(float fSemitone) {
   // C0 is 12
   // B8 is 119
   int semitone = static_cast<int>(std::round(fSemitone));
-  if (semitone < 12 || semitone > 119) {
+  if (semitone < st_min || semitone > st_max) {
     return "???";
   }
 

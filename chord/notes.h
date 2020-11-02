@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 
+const int st_min = 12;  // C0
+const int st_max = 119; // B8
+
 // Convert 1v/octave to Hz
 float e1vo_to_hz(float e1vo);
 
